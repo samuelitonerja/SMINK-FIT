@@ -52,8 +52,22 @@ export async function loadUserData(userId) {
     const sleepObj = {};
     (sleep || []).forEach(r => { sleepObj[r.date_key] = r.data; });
 
+    // Convertir perfil de snake_case a camelCase (como espera la app)
+    const userDataFormatted = profile ? {
+      name: profile.name,
+      weight: profile.weight,
+      height: profile.height,
+      age: profile.age,
+      sex: profile.sex,
+      activity: profile.activity,
+      goal: profile.goal,
+      numMeals: profile.num_meals || 3,
+      kcalAdjust: profile.kcal_adjust || 0,
+      email: profile.email,
+    } : null;
+
     return {
-      userData: profile || null,
+      userData: userDataFormatted,
       history: nutritionObj,
       workoutLog: workoutObj,
       measureLog: measureObj,
