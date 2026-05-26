@@ -11,34 +11,57 @@ function Root() {
   const [migrating, setMigrating] = useState(false)
 
   const initUser = async (sess) => {
-    if (!sess) { setSession(null); return; }
+    if (!sess) { setSession(null); setCloudData(null); return; }
     setMigrating(true);
-    // 1. Migrar datos locales si los hay (silencioso)
-    await migrateFromLocalStorage(sess.user.id);
-    // 2. Cargar datos desde Supabase
-    const data = await loadUserData(sess.user.id);
-    setCloudData(data);
+    try {
+      // Timeout de 8 segundos: si tarda más, entrar igualmente
+      const timeout = new Promise(resolve => setTimeout(() => resolve({}), 8000));
+      await migrateFromLocalStorage(sess.user.id);
+      const data = await Promise.race([loadUserData(sess.user.id), timeout]);
+      setCloudData(data || {});
+    } catch(e) {
+      console.error('Error iniciando usuario:', e);
+      setCloudData({});
+    }
     setSession(sess);
     setMigrating(false);
   };
 
   useEffect(() => {
+    // Recuperar sesión guardada (persiste entre recargas)
     supabase.auth.getSession().then(({ data: { session } }) => {
       initUser(session);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      initUser(session);
+
+    // Escuchar cambios: login, logout, token refresh
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setCloudData(null);
+        setMigrating(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        initUser(session);
+      }
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
-  // Cargando / migrando
+  // Pantalla de carga
   if (session === undefined || migrating) {
     return (
       <div style={{ minHeight:"100vh", background:"#0a0d0a", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16 }}>
-        <div style={{ width:44, height:44, border:"3px solid #2a2a3a", borderTop:"3px solid #4caf50", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
-        <div style={{ color:"#666", fontSize:13 }}>{migrating ? "Sincronizando tus datos..." : "Cargando..."}</div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="46" stroke="#A8FF60" strokeWidth="4" fill="rgba(168,255,61,0.06)" />
+          <path d="M70 32 C70 24 60 21 50 21 C39 21 31 27 31 37 C31 46 41 49 50 52 C59 55 69 58 69 68 C69 78 60 81 50 81 C39 81 30 77 30 68"
+            stroke="#A8FF60" strokeWidth="7" strokeLinecap="round" fill="none" />
+        </svg>
+        <div style={{ color:"#666", fontSize:13, letterSpacing:1 }}>
+          {migrating ? "Sincronizando tus datos..." : "Cargando..."}
+        </div>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
       </div>
     );
   }
