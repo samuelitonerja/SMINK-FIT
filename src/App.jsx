@@ -1061,14 +1061,16 @@ function calcWaterGoal(u) {
 }
 
 function calcMacros(u) {
+  if (!u || !u.weight || !u.height || !u.age || !u.sex || !u.activity || !u.goal) return null;
   const bmr = u.sex === "hombre"
     ? 10*u.weight + 6.25*u.height - 5*u.age + 5
     : 10*u.weight + 6.25*u.height - 5*u.age - 161;
   const act = ACTIVITY_LEVELS.find(a => a.id === u.activity)?.factor || 1.2;
   const goal = GOALS.find(g => g.id === u.goal);
+  if (!goal) return null;
   const tdee = Math.round(bmr * act);
-  const recommendedKcal = Math.round(tdee + goal.kcalOffset); // valor calculado/recomendado
-  const adjust = u.kcalAdjust || 0; // ajuste manual del usuario
+  const recommendedKcal = Math.round(tdee + goal.kcalOffset);
+  const adjust = u.kcalAdjust || 0;
   const targetKcal = recommendedKcal + adjust;
   const protein = Math.round(u.weight * goal.proteinMult);
   const fat = Math.round((targetKcal * goal.fatPct) / 9);
@@ -1420,6 +1422,7 @@ function ProfileScreen({ initial, onSave }) {
       )}
 
       <button onClick={()=>valid&&onSave(form)} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:valid?"linear-gradient(135deg,#4caf50,#2e7d32)":"#2a2a3a", color:valid?"white":"#555", fontWeight:900, fontSize:16, cursor:valid?"pointer":"default" }}>{valid?"Guardar y continuar →":"Rellena todos los campos"}</button>
+      <button onClick={async()=>{ const {supabase:sb} = await import('./supabase.js'); await sb.auth.signOut(); window.location.reload(); }} style={{ width:"100%", marginTop:12, padding:"13px", borderRadius:14, border:"1px solid #2a2a3a", background:"transparent", color:"#666", fontWeight:600, fontSize:14, cursor:"pointer" }}>Cerrar sesión</button>
 
       {/* Aviso al ajustar calorías */}
       {showAdjustWarn && (
@@ -5949,7 +5952,8 @@ export default function App({ userId, userEmail, cloudData }) {
   };
 
   if (showSplash) return <SplashScreen />;
-  if (!userData || editing) return <ProfileScreen initial={editing?userData:null} onSave={handleSaveProfile} />;
+  // Si userData está vacío (sin nombre) o editando, mostrar perfil
+  if (!userData || !userData.name || editing) return <ProfileScreen initial={editing?userData:null} onSave={handleSaveProfile} />;
 
   const mainTabs = ["inicio","nutricion","entreno","medidas"];
 
