@@ -5783,21 +5783,22 @@ function BottomNav({ active, onChange }) {
 // APP PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
 export default function App({ userId, userEmail, cloudData }) {
-  // ── Estados inicializados desde Supabase (cloudData) o localStorage como fallback ──
+  // ── Estados inicializados desde Supabase (cloudData) — SIN localStorage ──
+  // Los datos sensibles NUNCA se guardan en el dispositivo
   const cd = cloudData || {};
-  const [userData, setUserDataRaw] = useLS("userData_v10", {});
-  const [history, setHistoryRaw] = useLS("history_v10", {});
-  const [measureLog, setMeasureLogRaw] = useLS("measureLog_v10", {});
-  const [mealDist, setMealDist] = useLS("mealDist_v10", DEFAULT_MEAL_DIST);
-  const [customFoods, setCustomFoodsRaw] = useLS("customFoods_v10", []);
-  const [trainingState, setTrainingState] = useLS("trainingState_v10", null);
-  const [savedRoutine, setSavedRoutineRaw] = useLS("savedRoutine_v10", null);
-  const [racePlan, setRacePlanRaw] = useLS("racePlan_v10", null);
-  const [workoutLog, setWorkoutLogRaw] = useLS("workoutLog_v10", {});
-  const [sleepLog, setSleepLogRaw] = useLS("sleepLog_v10", {});
-  const [waterLog, setWaterLogRaw] = useLS("waterLog_v10", {});
-  const [shoppingPlan, setShoppingPlan] = useLS("shoppingPlan_v10", { dias:{} });
-  const [savedLists, setSavedLists] = useLS("savedLists_v10", []);
+  const [userData, setUserDataRaw] = useState(cd.userData || null);
+  const [history, setHistoryRaw] = useState(cd.history || {});
+  const [measureLog, setMeasureLogRaw] = useState(cd.measureLog || {});
+  const [mealDist, setMealDist] = useState(DEFAULT_MEAL_DIST);
+  const [customFoods, setCustomFoodsRaw] = useState(cd.customFoods || []);
+  const [trainingState, setTrainingState] = useState(null);
+  const [savedRoutine, setSavedRoutineRaw] = useState(cd.savedRoutine || null);
+  const [racePlan, setRacePlanRaw] = useState(cd.racePlan || null);
+  const [workoutLog, setWorkoutLogRaw] = useState(cd.workoutLog || {});
+  const [sleepLog, setSleepLogRaw] = useState(cd.sleepLog || {});
+  const [waterLog, setWaterLogRaw] = useState(cd.waterLog || {});
+  const [shoppingPlan, setShoppingPlan] = useState({ dias:{} });
+  const [savedLists, setSavedLists] = useState([]);
   const [cloudLoaded, setCloudLoaded] = useState(false);
 
   // Al recibir cloudData, sobrescribir el estado local con los datos de Supabase
@@ -5815,7 +5816,7 @@ export default function App({ userId, userEmail, cloudData }) {
     setCloudLoaded(true);
   }, [cloudData]);
 
-  // Wrappers que guardan en Supabase + localStorage simultáneamente
+  // Wrappers que guardan SOLO en Supabase (sin localStorage)
   const setUserData = useCallback(v => {
     setUserDataRaw(prev => {
       const nv = typeof v === "function" ? v(prev) : v;
@@ -5828,7 +5829,6 @@ export default function App({ userId, userEmail, cloudData }) {
     setHistoryRaw(prev => {
       const nv = typeof v === "function" ? v(prev) : v;
       if (userId) {
-        // Guardar solo los días que hayan cambiado
         const changed = Object.keys(nv).filter(k => JSON.stringify(nv[k]) !== JSON.stringify(prev[k]));
         changed.forEach(k => saveNutritionDay(userId, k, nv[k]));
       }
@@ -5908,7 +5908,9 @@ export default function App({ userId, userEmail, cloudData }) {
   const [tab, setTab] = useState("inicio");
   const [nutritionDate, setNutritionDate] = useState(new Date());
   const [menuOpen, setMenuOpen] = useState(false);
-  const [installPromptSeen, setInstallPromptSeen] = useLS("installPromptSeen_v10", false);
+  const [installPromptSeen, setInstallPromptSeen] = useState(() => {
+    try { return localStorage.getItem("installPromptSeen") === "true"; } catch { return false; }
+  });
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
   useEffect(() => { const t = setTimeout(()=>setShowSplash(false), 3000); return ()=>clearTimeout(t); }, []);
@@ -5989,8 +5991,8 @@ export default function App({ userId, userEmail, cloudData }) {
             </div>
             <div style={{ color:"white", fontWeight:900, fontSize:20, marginBottom:8 }}>Instala SMINK FIT</div>
             <div style={{ color:"#aaa", fontSize:14, lineHeight:1.5, marginBottom:24 }}>Añádela a tu pantalla de inicio y úsala como una app, a pantalla completa y con su icono. ¿Quieres ver cómo se hace?</div>
-            <button onClick={()=>{ setInstallPromptSeen(true); setShowInstallPrompt(false); setTab("instalar"); }} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:"linear-gradient(135deg,#4caf50,#2e7d32)", color:"white", fontWeight:800, fontSize:15, cursor:"pointer", marginBottom:10 }}>Sí, enséñame cómo</button>
-            <button onClick={()=>{ setInstallPromptSeen(true); setShowInstallPrompt(false); }} style={{ width:"100%", padding:"15px", borderRadius:14, border:"1px solid #2a2a3a", background:"transparent", color:"#888", fontWeight:700, fontSize:14, cursor:"pointer" }}>Ahora no</button>
+            <button onClick={()=>{ setInstallPromptSeen(true); localStorage.setItem("installPromptSeen","true"); setShowInstallPrompt(false); setTab("instalar"); }} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:"linear-gradient(135deg,#4caf50,#2e7d32)", color:"white", fontWeight:800, fontSize:15, cursor:"pointer", marginBottom:10 }}>Sí, enséñame cómo</button>
+            <button onClick={()=>{ setInstallPromptSeen(true); localStorage.setItem("installPromptSeen","true"); setShowInstallPrompt(false); }} style={{ width:"100%", padding:"15px", borderRadius:14, border:"1px solid #2a2a3a", background:"transparent", color:"#888", fontWeight:700, fontSize:14, cursor:"pointer" }}>Ahora no</button>
           </div>
         </div>
       )}
