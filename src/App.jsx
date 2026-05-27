@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from "react";
-import { saveProfile, saveNutritionDay, saveWorkout, saveMeasure, saveRoutine, saveRacePlan, saveWater, saveSleep, saveCustomFoods } from "./db.js";
 import SettingsScreen from "./SettingsScreen.jsx";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -5782,127 +5781,22 @@ function BottomNav({ active, onChange }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // APP PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
-export default function App({ userId, userEmail, cloudData }) {
-  // ── Estados: cloudData (Supabase) como fuente principal, localStorage como caché ──
-  // Cuando App se monta, cloudData ya está listo (main.jsx lo espera antes de montar App)
-  const _lsGet = (key, def) => { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : def; } catch { return def; } };
-  const _lsSet = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+export default function App() {
+  // ── Estados con localStorage ──────────────────────────
+  const [userData, setUserData] = useLS("userData_v10", null);
+  const [history, setHistory] = useLS("history_v10", {});
+  const [measureLog, setMeasureLog] = useLS("measureLog_v10", {});
+  const [mealDist, setMealDist] = useLS("mealDist_v10", DEFAULT_MEAL_DIST);
+  const [customFoods, setCustomFoods] = useLS("customFoods_v10", []);
+  const [trainingState, setTrainingState] = useLS("trainingState_v10", null);
+  const [savedRoutine, setSavedRoutine] = useLS("savedRoutine_v10", null);
+  const [racePlan, setRacePlan] = useLS("racePlan_v10", null);
+  const [workoutLog, setWorkoutLog] = useLS("workoutLog_v10", {});
+  const [sleepLog, setSleepLog] = useLS("sleepLog_v10", {});
+  const [waterLog, setWaterLog] = useLS("waterLog_v10", {});
+  const [shoppingPlan, setShoppingPlan] = useLS("shoppingPlan_v10", { dias:{} });
+  const [savedLists, setSavedLists] = useLS("savedLists_v10", []);
 
-  const [userData, setUserDataRaw] = useState(() => cloudData?.userData || _lsGet("userData_v10", null));
-  const [history, setHistoryRaw] = useState(() => cloudData?.history && Object.keys(cloudData.history).length ? cloudData.history : _lsGet("history_v10", {}));
-  const [measureLog, setMeasureLogRaw] = useState(() => cloudData?.measureLog && Object.keys(cloudData.measureLog).length ? cloudData.measureLog : _lsGet("measureLog_v10", {}));
-  const [mealDist, setMealDistRaw] = useState(() => _lsGet("mealDist_v10", DEFAULT_MEAL_DIST));
-  const [customFoods, setCustomFoodsRaw] = useState(() => cloudData?.customFoods?.length ? cloudData.customFoods : _lsGet("customFoods_v10", []));
-  const [trainingState, setTrainingState] = useState(() => _lsGet("trainingState_v10", null));
-  const [savedRoutine, setSavedRoutineRaw] = useState(() => cloudData?.savedRoutine || _lsGet("savedRoutine_v10", null));
-  const [racePlan, setRacePlanRaw] = useState(() => cloudData?.racePlan || _lsGet("racePlan_v10", null));
-  const [workoutLog, setWorkoutLogRaw] = useState(() => cloudData?.workoutLog && Object.keys(cloudData.workoutLog).length ? cloudData.workoutLog : _lsGet("workoutLog_v10", {}));
-  const [sleepLog, setSleepLogRaw] = useState(() => cloudData?.sleepLog && Object.keys(cloudData.sleepLog).length ? cloudData.sleepLog : _lsGet("sleepLog_v10", {}));
-  const [waterLog, setWaterLogRaw] = useState(() => cloudData?.waterLog && Object.keys(cloudData.waterLog).length ? cloudData.waterLog : _lsGet("waterLog_v10", {}));
-  const [shoppingPlan, setShoppingPlanRaw] = useState(() => _lsGet("shoppingPlan_v10", { dias:{} }));
-  const [savedLists, setSavedListsRaw] = useState(() => _lsGet("savedLists_v10", []));
-
-  // Helpers para sincronizar con localStorage
-  const setMealDist = (v) => { setMealDistRaw(v); _lsSet("mealDist_v10", v); };
-  const setShoppingPlan = (v) => { const nv = typeof v === "function" ? v(shoppingPlan) : v; setShoppingPlanRaw(nv); _lsSet("shoppingPlan_v10", nv); };
-  const setSavedLists = (v) => { const nv = typeof v === "function" ? v(savedLists) : v; setSavedListsRaw(nv); _lsSet("savedLists_v10", nv); };
-
-  // Wrappers que guardan en localStorage (inmediato) + Supabase (en segundo plano)
-  const setUserData = useCallback(v => {
-    setUserDataRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("userData_v10", nv);
-      if (userId) saveProfile(userId, { name:nv.name, weight:nv.weight, height:nv.height, age:nv.age, sex:nv.sex, activity:nv.activity, goal:nv.goal, num_meals:nv.numMeals, kcal_adjust:nv.kcalAdjust });
-      return nv;
-    });
-  }, [userId]);
-
-  const setHistory = useCallback(v => {
-    setHistoryRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("history_v10", nv);
-      if (userId) {
-        const changed = Object.keys(nv).filter(k => JSON.stringify(nv[k]) !== JSON.stringify(prev[k]));
-        changed.forEach(k => saveNutritionDay(userId, k, nv[k]));
-      }
-      return nv;
-    });
-  }, [userId]);
-
-  const setWorkoutLog = useCallback(v => {
-    setWorkoutLogRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("workoutLog_v10", nv);
-      if (userId) {
-        const changed = Object.keys(nv).filter(k => !prev[k]);
-        changed.forEach(k => saveWorkout(userId, k, nv[k]));
-      }
-      return nv;
-    });
-  }, [userId]);
-
-  const setMeasureLog = useCallback(v => {
-    setMeasureLogRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("measureLog_v10", nv);
-      if (userId) {
-        const changed = Object.keys(nv).filter(k => JSON.stringify(nv[k]) !== JSON.stringify(prev[k]));
-        changed.forEach(k => saveMeasure(userId, k, nv[k]));
-      }
-      return nv;
-    });
-  }, [userId]);
-
-  const setSavedRoutine = useCallback(v => {
-    setSavedRoutineRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("savedRoutine_v10", nv);
-      if (userId) saveRoutine(userId, nv);
-      return nv;
-    });
-  }, [userId]);
-
-  const setRacePlan = useCallback(v => {
-    setRacePlanRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("racePlan_v10", nv);
-      if (userId) saveRacePlan(userId, nv);
-      return nv;
-    });
-  }, [userId]);
-
-  const setWaterLog = useCallback(v => {
-    setWaterLogRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("waterLog_v10", nv);
-      if (userId) {
-        const changed = Object.keys(nv).filter(k => nv[k] !== prev[k]);
-        changed.forEach(k => saveWater(userId, k, nv[k]));
-      }
-      return nv;
-    });
-  }, [userId]);
-
-  const setSleepLog = useCallback(v => {
-    setSleepLogRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("sleepLog_v10", nv);
-      if (userId) {
-        const changed = Object.keys(nv).filter(k => JSON.stringify(nv[k]) !== JSON.stringify(prev[k]));
-        changed.forEach(k => saveSleep(userId, k, nv[k]));
-      }
-      return nv;
-    });
-  }, [userId]);
-
-  const setCustomFoods = useCallback(v => {
-    setCustomFoodsRaw(prev => {
-      const nv = typeof v === "function" ? v(prev) : v;
-      _lsSet("customFoods_v10", nv);
-      if (userId) saveCustomFoods(userId, nv);
-      return nv;
-    });
-  }, [userId]);
   const [editing, setEditing] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [tab, setTab] = useState("inicio");
@@ -6036,7 +5930,7 @@ export default function App({ userId, userEmail, cloudData }) {
       {tab === "compra" && <ShoppingListTab shoppingPlan={shoppingPlan} setShoppingPlan={setShoppingPlan} savedLists={savedLists} setSavedLists={setSavedLists} macros={macros} numMeals={numMeals} customFoods={customFoods} onCreateFood={handleCreateFood} onDeleteFood={handleDeleteFood} onBack={()=>setTab("inicio")} />}
       {tab === "info" && <InfoTab onBack={()=>setTab("inicio")} />}
       {tab === "instalar" && <InstallTab onBack={()=>setTab("inicio")} />}
-      {tab === "ajustes" && <SettingsScreen userData={userData} userId={userId} userEmail={userEmail} userPlan={cloudData?.userPlan||"free"} onLogout={async()=>{ const {supabase:sb}=await import('./supabase.js'); await sb.auth.signOut(); window.location.reload(); }} onEditProfile={()=>setEditing(true)} />}
+      {tab === "ajustes" && <SettingsScreen userData={userData} userId={null} userEmail={userData?.email||""} userPlan="free" onLogout={()=>{ Object.keys(localStorage).forEach(k=>localStorage.removeItem(k)); window.location.reload(); }} onEditProfile={()=>setEditing(true)} />}
       {tab === "soporte" && <SupportTab onBack={()=>setTab("inicio")} />}
       </div>
 
