@@ -87,9 +87,29 @@ export async function loadUserData(userId) {
 
 // ── Guardar perfil ─────────────────────────────────────────
 export async function saveProfile(userId, data) {
-  await supabase.from('profiles').upsert({
-    id: userId, ...data, updated_at: new Date().toISOString()
-  });
+  try {
+    const clean = {
+      id: userId,
+      email: data.email || undefined,
+      name: data.name || null,
+      weight: data.weight ? parseFloat(data.weight) : null,
+      height: data.height ? parseFloat(data.height) : null,
+      age: data.age ? parseInt(data.age) : null,
+      sex: data.sex || null,
+      activity: data.activity || null,
+      goal: data.goal || null,
+      num_meals: data.num_meals ? parseInt(data.num_meals) : 3,
+      kcal_adjust: data.kcal_adjust ? parseInt(data.kcal_adjust) : 0,
+      updated_at: new Date().toISOString(),
+    };
+    // Eliminar campos undefined
+    Object.keys(clean).forEach(k => clean[k] === undefined && delete clean[k]);
+    const { error } = await supabase.from('profiles').upsert(clean, { onConflict: 'id' });
+    if (error) console.error('Error guardando perfil:', error);
+    else console.log('Perfil guardado OK');
+  } catch(e) {
+    console.error('Error en saveProfile:', e);
+  }
 }
 
 // ── Guardar nutrición (un día concreto) ────────────────────
