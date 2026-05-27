@@ -59,6 +59,11 @@ function Root() {
       // Cargar datos desde Supabase
       const timeout = new Promise(resolve => setTimeout(() => resolve({}), 8000));
       const data = await Promise.race([loadUserData(sess.user.id), timeout]);
+      console.log('Datos cargados de Supabase:', JSON.stringify({
+        tieneUserData: !!data?.userData,
+        nombre: data?.userData?.name,
+        peso: data?.userData?.weight,
+      }));
       setCloudData(data || {});
       setStatus('app');
 
