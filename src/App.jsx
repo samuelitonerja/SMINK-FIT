@@ -5730,7 +5730,7 @@ function SideMenu({ open, onClose, onNavigate, userName }) {
     { id:"sep1", sep:true },
     { id:"instalar", emoji:"📲", label:"Instalar app" },
     { id:"info", emoji:"💬", label:"Resuelve tus dudas" },
-    { id:"soporte", emoji:"📞", label:"Soporte" },
+    { id:"ajustes", emoji:"⚙️", label:"Ajustes" },
   ];
   return (
     <div style={{ position:"fixed", inset:0, zIndex:300 }}>
@@ -5738,7 +5738,7 @@ function SideMenu({ open, onClose, onNavigate, userName }) {
       <div style={{ position:"absolute", top:0, left:0, bottom:0, width:"78%", maxWidth:320, background:"#15151c", borderRight:"1px solid #2a2a3a", padding:"24px 0", boxShadow:"4px 0 30px rgba(0,0,0,0.5)", overflowY:"auto" }}>
         <div style={{ padding:"0 20px 20px", borderBottom:"1px solid #232330", marginBottom:12 }}>
           <div style={{ fontWeight:900, fontSize:20, letterSpacing:1 }}><span style={{ color:"#A8FF60" }}>SMINK</span> <span style={{ color:"#fff" }}>FIT</span></div>
-          <div style={{ color:"#666", fontSize:13, marginTop:4 }}>Hola, {userName} 👋</div>
+          <div style={{ color:"#666", fontSize:13, marginTop:4 }}>Hola, {userName}</div>
         </div>
         {items.map(it => it.sep
           ? <div key={it.id} style={{ height:1, background:"#232330", margin:"12px 20px" }} />
@@ -5766,7 +5766,6 @@ function BottomNav({ active, onChange }) {
     { id:"nutricion", label:"Nutrición", icon:"🍽️" },
     { id:"entreno", label:"Entreno", icon:"🏋️" },
     { id:"medidas", label:"Medidas", icon:"📊" },
-    { id:"ajustes", label:"Ajustes", icon:"⚙️" },
   ];
   return (
     <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"#15151c", borderTop:"1px solid #2a2a3a", display:"flex", zIndex:150, paddingBottom:"env(safe-area-inset-bottom)" }}>
@@ -5957,7 +5956,7 @@ export default function App({ userId, userEmail, cloudData }) {
   // Si userData está vacío (sin nombre) o editando, mostrar perfil
   if (!userData || !userData.name || editing) return <ProfileScreen initial={editing?userData:null} onSave={handleSaveProfile} />;
 
-  const mainTabs = ["inicio","nutricion","entreno","medidas","ajustes"];
+  const mainTabs = ["inicio","nutricion","entreno","medidas"];
 
   return (
     <div style={{ minHeight:"100vh", background:"#0f0f14", paddingBottom:74 }}>
