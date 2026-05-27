@@ -5931,10 +5931,19 @@ export default function App({ userId, userEmail, cloudData }) {
 
   const handleSaveProfile = (data) => {
     const prevNum = userData?.numMeals || DEFAULT_NUM_MEALS;
-    setUserData(data);
+    // Convertir strings a números donde corresponde
+    const clean = {
+      ...data,
+      weight: parseFloat(data.weight) || null,
+      height: parseFloat(data.height) || null,
+      age: parseInt(data.age) || null,
+      numMeals: parseInt(data.numMeals) || DEFAULT_NUM_MEALS,
+      kcalAdjust: parseInt(data.kcalAdjust) || 0,
+    };
+    setUserData(clean);
     setEditing(false);
-    if (!userData || data.numMeals !== prevNum) {
-      setMealDist(getDefaultDist(data.numMeals));
+    if (!userData || clean.numMeals !== prevNum) {
+      setMealDist(getDefaultDist(clean.numMeals));
     }
   };
 
