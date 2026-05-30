@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import AuthScreen from './AuthScreen.jsx'
 import AdminPanel from './AdminPanel.jsx'
+import TrainerPanel from './TrainerPanel.jsx'
 import { supabase } from './supabase.js'
 
 // Limpia datos locales al cambiar de usuario
@@ -95,12 +96,8 @@ function Root() {
   // Admin → panel de administración
   if (userRole === "admin") return <AdminPanel onLogout={handleLogout} />;
 
-  // Entrenador → panel de entrenador (próximamente)
-  if (userRole === "trainer") return (
-    <div style={{ minHeight:"100vh", background:"#08090c", display:"flex", alignItems:"center", justifyContent:"center", color:"#c8fb6e", fontFamily:"system-ui", fontSize:18, fontWeight:700 }}>
-      Panel de entrenador — En construcción
-    </div>
-  );
+  // Entrenador → panel de entrenador
+  if (userRole === "trainer") return <TrainerPanel session={session} onLogout={handleLogout} />;
 
   // Atleta → app normal
   return (
